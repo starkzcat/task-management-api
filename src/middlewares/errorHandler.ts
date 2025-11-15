@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/errors";
-import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 export const errorHandler = (
-  err: AppError,
+  err: Error,
   req: Request,
   res: Response,
   next: NextFunction
@@ -12,14 +12,14 @@ export const errorHandler = (
   console.error("Error:", err);
 
   if (err instanceof AppError) {
-    res.status(err.statusCode).json({
+    return res.status(err.statusCode).json({
       status: "error",
       message: err.message,
     });
   }
 
   if (err instanceof ZodError) {
-    res.status(400).json({
+    return res.status(400).json({
       status: "error",
       message: "Validation Error",
       errors: err._zod.def.map((e) => ({
@@ -29,7 +29,8 @@ export const errorHandler = (
     });
   }
 
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+  if (err instanceof PrismaClientKnownRequestError) {
+    // wass error here
     if (err.code === "P2002") {
       return res.status(409).json({
         status: "error",
