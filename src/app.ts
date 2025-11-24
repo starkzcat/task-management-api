@@ -1,9 +1,11 @@
 import express, { Application } from "express";
-import helmet from "helmet";
 import cors from "cors";
+import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import authRoutes from "./routes/auth.routes";
 import { errorHandler } from "./middlewares/errorHandler";
+import authRoutes from "./routes/auth.routes";
+import projectRoutes from "./routes/project.routes";
+import taskRoutes from "./routes/task.routes";
 
 const app: Application = express();
 
@@ -30,6 +32,8 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/tasks", taskRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
