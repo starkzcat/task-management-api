@@ -35,7 +35,7 @@ router.delete(
 );
 
 router.get(
-  ":/id/stats",
+  "/:id/stats",
   validate(projectIdSchema),
   projectController.getProjectStats
 );
