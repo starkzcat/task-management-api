@@ -16,10 +16,11 @@ export const createTaskSchema = z.object({
     status: z.enum(TaskStatus).optional().default(TaskStatus.TODO),
     priority: z.enum(TaskPriority).optional().default(TaskPriority.MEDIUM),
     dueDate: z
-      .date("Invalid date format")
+      .string()
+      .datetime("Invalid date format")
+      .transform((val) => new Date(val))
       .optional()
-      .nullable()
-      .transform((val) => (val ? new Date(val) : null)),
+      .nullable(),
     projectId: z.uuid("Invalid project ID").optional().nullable(),
   }),
 });
@@ -42,10 +43,11 @@ export const updateTaskSchema = z.object({
     status: z.enum(TaskStatus).optional(),
     priority: z.enum(TaskPriority).optional(),
     dueDate: z
-      .date("Invalid date format")
+      .string()
+      .datetime("Invalid date format")
+      .transform((val) => new Date(val))
       .optional()
-      .nullable()
-      .transform((val) => (val ? new Date(val) : null)),
+      .nullable(),
     projectId: z.uuid("Invalid project ID").optional().nullable(),
   }),
 });

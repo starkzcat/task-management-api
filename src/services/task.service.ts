@@ -1,14 +1,19 @@
-import { Prisma } from "@prisma/client";
 import prisma from "../config/database";
-import { ForbiddenError, NotFoundError } from "../utils/errors";
+import {
+  NotFoundError,
+  ForbiddenError,
+  ValidationError,
+} from "../utils/errors";
 import {
   CreateTaskInput,
-  GetTasksQuery,
   UpdateTaskInput,
+  GetTasksQuery,
 } from "../validators/task.validator";
+import { Prisma } from "@prisma/client";
 
 export class TaskService {
   async createTask(userId: string, data: CreateTaskInput) {
+    // If projectId provided, verify user owns the project
     if (data.projectId) {
       const project = await prisma.project.findUnique({
         where: { id: data.projectId },
@@ -47,13 +52,14 @@ export class TaskService {
       status,
       priority,
       projectId,
-      page,
-      limit,
-      sortBy,
-      sortOrder,
+      page = 1,
+      limit = 10,
+      sortBy = "createdAt",
+      sortOrder = "asc",
       search,
     } = query;
 
+    // Build where clause
     const where: Prisma.TaskWhereInput = {
       userId,
       ...(status && { status }),
@@ -61,24 +67,24 @@ export class TaskService {
       ...(projectId && { projectId }),
       ...(search && {
         OR: [
-          {
-            title: { contains: search, mode: "insensitive" },
-          },
-          {
-            description: { contains: search, mode: "insensitive" },
-          },
+          { title: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
         ],
       }),
     };
 
+    // Calculate pagination
     const skip = (page - 1) * limit;
 
+    // Execute queries in parallel
     const [tasks, total] = await Promise.all([
       prisma.task.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: {
+          [sortBy]: sortOrder as Prisma.SortOrder,
+        },
         include: {
           project: {
             select: {
@@ -129,8 +135,10 @@ export class TaskService {
   }
 
   async updateTask(userId: string, taskId: string, data: UpdateTaskInput) {
+    // Check ownership
     await this.getTaskById(userId, taskId);
 
+    // If updating projectId, verify ownership
     if (data.projectId) {
       const project = await prisma.project.findUnique({
         where: { id: data.projectId },
@@ -180,9 +188,7 @@ export class TaskService {
       tasksByPriority,
       overdueTasks,
     ] = await Promise.all([
-      prisma.task.count({
-        where: { userId },
-      }),
+      prisma.task.count({ where: { userId } }),
       prisma.task.count({
         where: { userId, status: "COMPLETED" },
       }),
